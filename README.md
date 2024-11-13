@@ -56,3 +56,24 @@ Existing methods for gauging public sentiment towards politicians, such as tradi
 - Revenue generation
 
 This MVP will serve as a strong foundation for a comprehensive political sentiment analysis platform, providing valuable insights to a wide range of users and establishing a foothold in a rapidly growing market.
+
+## 9. Architecture  
+Four services logically seperated by responsibility. Inter-service communication is provided by ApplicationEventPublisher which is a non-blocking event based message service.
+
+- ### The Listeners (Twitter Stream Thread Pool):
+    A dedicated thread pool continuously listens to the Twitter filtered stream and publish bundles to the ApplicationEventPublisher.  
+Twitter API > Spring Reactive WebClient > ApplicationEventPublisher
+
+- ### The Analysts (Data Processing Thread Pool):
+    This thread pool subscribes to the ApplicationEventPublisher topic where the Listeners publish incoming tweets.
+Each thread grabs a bundle of tweets, performs sentiment analysis, and updates scores and trends.  
+ApplicationEventPublisher > Spring AI/GCP Vertex AI - Gemini > ApplicationEventPublisher
+
+- ### The Archivists (Data Storage Thread Pool):
+    This thread pool handles database interactions.
+It receives processed data from the Analyst and efficiently stores it in Cloud SQL.  
+ApplicationEventPublisher > Spring Data JPA
+
+- ### The Concierge (Controller Service):
+    Uses Spring Web to handle incoming API requests, effortlessly spinning up threads as needed.  
+Spring Data JPA > Spring Reactive Web > ReST API
