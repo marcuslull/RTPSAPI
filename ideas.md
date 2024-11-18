@@ -1,5 +1,9 @@
 # Ideas  
 
+
+### Bluesky URL Example
+https://bsky.app/profile/did:plc:lr7ey7d75zqtsqizrerjvigt/post/3lb3f64pssk2c
+
 Consolidate MVP into a single Cloud Run service with dedicated thread pools
 
 ### The Listeners (Twitter Stream Thread Pool):
