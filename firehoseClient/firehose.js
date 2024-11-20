@@ -4,59 +4,93 @@ import * as redis from "redis";
 
 async function main() {
 
-    // Redis connection
-    const producer = redis.createClient();
 
-    // handle errors
-    producer.on("error", err => {
-        console.log("Redis Client Error: ", err)
+
+
+    // Redis connection
+    const redisConnection = redis.createClient();
+
+    redisConnection.on("error", err => {
+        console.error("Firehose Connection Script - Redis Client Error: ", err)
+        process.exit(1);
     });
 
-    // connect
-    await producer.connect();
+    try {
+        await redisConnection.connect();
+        console.log("Firehose Connection Script - Redis Client Connected!")
+    } catch (err) {
+        console.error("Firehose Connection Script - Redis Client Connection Error: ", err)
+        process.exit(1);
+    }
+
 
 
 
 
     // Bluesky connection
-    const firehose = new Firehose();
+    const firehoseConnection = new Firehose();
 
-    firehose.on("commit", async commit => {
-        let combined = {
-            repo: commit.repo,
-            ops: commit.ops[0]
-        }
-
-        try {
-            await producer.xAdd("bskyFirehose", "*", "posts", JSON.stringify(combined)) // adding to Redis stream
-            // console.log("Message added successfully!")
-        } catch (err) {
-            console.log("Error adding message to stream: ", err);
-        }
-        // console.log(JSON.stringify(combined));
+    firehoseConnection.on('error', (err) => {
+        console.error("Firehose Connection Script - Firehose Connection Error:", err)
+        process.exit(1);
     });
 
-    firehose.start();
+    firehoseConnection.on("commit", async commit => {
+
+        const redisStream = "bskyFirehose"; // Redis stream for raw messaged
+        const redisIdStrategy = "*"; // Redis auto-generated ID strategy
+
+        try {
+            // compose message
+            let combined = JSON.stringify({
+                repo: commit.repo,
+                ops: commit.ops[0]
+            });
+
+            // add message to Redis stream named "bskyFirehose" and auto generate ids
+            await redisConnection.xAdd(redisStream, redisIdStrategy, { combined })
+            console.log("Firehose Connection Script - Message added successfully! " + combined.toString())
+        } catch (err) {
+            console.error("Firehose Connection Script - Error adding message to stream: ", err);
+        }
+    });
 
 
 
 
-    // Termination
+
+
+    // Start the firehose
+    try {
+        await firehoseConnection.start();
+        console.log("Firehose Connection Script - Firehose Started")
+    } catch (err) {
+        console.error("Firehose Connection Script - Error starting Bluesky Firehose:", err);
+        await redisConnection.quit();
+        process.exit(1);
+    }
+
+
+
+
+
+    // Termination firehose, redisConnection and process
     process.on('SIGTERM', handleTerminationSignal);
     process.on('SIGINT', handleTerminationSignal);
 
     async function handleTerminationSignal() {
         try {
-            await firehose.close();
-            firehose.on("close", async () => {
-                await producer.quit();
+            console.log("Firehose Connection Script - Shutting Down Firehose")
+            await firehoseConnection.close(); // close the firehose
+            firehoseConnection.on("close", async () => {
+                await redisConnection.quit(); // close the Redis connection
             })
         } catch (err) {
-            console.log("Error in terminating the Bluesky firehose script: ", err)
+            console.log("Firehose Connection Script - Error in terminating the Bluesky firehose script: ", err)
         } finally {
-            process.exit();
+            process.exit(); // close the script
         }
     }
 }
 
-main();
+main()

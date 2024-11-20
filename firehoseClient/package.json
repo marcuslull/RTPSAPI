@@ -5,9 +5,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "type": "module",
+  "author": "Marcus Lull",
+  "license": "MIT",
+  "description": "Places Bluesky firehose commits onto a Redis stream",
   "dependencies": {
     "@skyware/firehose": "^0.3.2",
     "redis": "^4.7.0"
