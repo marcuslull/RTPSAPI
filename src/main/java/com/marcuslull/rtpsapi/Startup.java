@@ -1,21 +1,27 @@
 package com.marcuslull.rtpsapi;
 
-import com.marcuslull.rtpsapi.listeners.bluesky.BlueskyListener;
+import com.marcuslull.rtpsapi.listeners.bluesky.BlueskyFirehose;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Component
 public class Startup implements CommandLineRunner {
-    private final BlueskyListener blueskyListener;
+    private final BlueskyFirehose blueskyFirehose;
 
-    public Startup(BlueskyListener blueskyListener) {
-        this.blueskyListener = blueskyListener;
+    public Startup(BlueskyFirehose blueskyFirehose) {
+        this.blueskyFirehose = blueskyFirehose;
     }
 
     @Override
-    public void run(String... args) throws IOException {
-        blueskyListener.connect();
+    public void run(String... args) {
+        ScheduledExecutorService scheduledExecutorService = blueskyFirehose.connect(
+                1,
+                5,
+                1,
+                0,
+                2
+        );
     }
 }

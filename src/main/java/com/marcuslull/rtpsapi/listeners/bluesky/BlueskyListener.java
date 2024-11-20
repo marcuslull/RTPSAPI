@@ -2,36 +2,87 @@ package com.marcuslull.rtpsapi.listeners.bluesky;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
-import com.marcuslull.rtpsapi.listeners.bluesky.model.BlueskyPost;
-import org.springframework.stereotype.Service;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-
-@Service
 public class BlueskyListener {
-    private final String SCRIPT_COMMAND = "node";
-    private final String SCRIPT_LOCATION = "./firehoseClient/firehose.js";
+
     private final String POST_FILTER = "app.bsky.feed.post/";
-    private final ObjectMapper mapper = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    private final ObjectMapper MAPPER = new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT);
+    private final String REDIS_STREAM_KEY = "bskyFirehose";
+    private final String REDIS_GROUP_NAME = "bskyGroup";
+    private final String REDIS_CONSUMER_NAME = "bskyConsumer";
 
-    public void connect() throws IOException {
-        Process process = new ProcessBuilder(SCRIPT_COMMAND, SCRIPT_LOCATION).start();
-        try (BufferedReader reader = process.inputReader()) {
-            reader.lines().forEach(line -> {
-                BlueskyPost post;
-                String prettyPost;
-                try {
-                    post = mapper.readValue(line, BlueskyPost.class);
-                    prettyPost = mapper.writeValueAsString(post);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-                if (post.ops() != null && post.ops().path().contains(POST_FILTER)) {
-                    System.out.println(prettyPost);
-                }
-            });
-        }
-    }
+
+
+
+
+
+
+
+
+
+
+//        LettuceConnectionFactory connectionFactory = new LettuceConnectionFactory();
+//        connectionFactory.afterPropertiesSet();
+//
+//        RedisTemplate<String, String> template = new RedisTemplate<>();
+//        template.setConnectionFactory(connectionFactory);
+//        template.setDefaultSerializer(StringRedisSerializer.UTF_8);
+//        template.afterPropertiesSet();
+//
+//        StreamInfo.XInfoGroups groups = template.opsForStream().groups(REDIS_STREAM_KEY);
+//        if (groups.isEmpty()) {
+//            template.opsForStream().createGroup(REDIS_STREAM_KEY, REDIS_GROUP_NAME);
+//        }
+//
+//        System.out.println(template.opsForStream().info(REDIS_STREAM_KEY));
+//
+//
+//        StreamReadOptions options = StreamReadOptions.empty().count(200);
+//        List<MapRecord<String, Object, Object>> records = template.opsForStream().read(
+//                Consumer.from(REDIS_GROUP_NAME, REDIS_CONSUMER_NAME),
+//                options,
+//                StreamOffset.create(REDIS_STREAM_KEY, ReadOffset.lastConsumed())
+//        );
+//
+//        // 5. Process the messages
+//        for (MapRecord<String, Object, Object> record : records) {
+//
+//            System.out.println(record.getValue());
+//
+//            // Acknowledge the message after processing
+//            template.opsForStream().acknowledge(REDIS_STREAM_KEY, REDIS_GROUP_NAME, record.getId());
+//        }
+//
+//
+//
+//        process.destroy();
+//        process.onExit().thenRun(() -> {
+//            System.out.println("process is alive = " + process.isAlive());
+//            connectionFactory.destroy();
+//        });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }
-
