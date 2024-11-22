@@ -2,7 +2,12 @@ package com.marcuslull.rtpsapi.listeners.bluesky;
 
 import org.springframework.stereotype.Service;
 
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import static com.marcuslull.rtpsapi.listeners.bluesky.BlueskyConstants.*;
 
 /**
  * Service for managing a Bluesky firehose process, which continuously collects data from the Bluesky social media platform.
@@ -11,9 +16,10 @@ import java.util.concurrent.*;
 @Service
 public class BlueskyFirehose {
 
-    private final String SCRIPT_COMMAND = "node";
-    private final String SCRIPT_LOCATION = "./firehoseClient/firehose.js";
     private ScheduledExecutorService firehoseExecutor;
+
+
+
 
     /**
      * Starts the Bluesky firehose process.
@@ -21,32 +27,23 @@ public class BlueskyFirehose {
      * to connect to the Bluesky firehose and collect data.  The Node.js script's execution time is controlled by `workerLifespanSeconds`.
      * The executor itself has a lifespan determined by `threadPoolLifespanSeconds`.
      *
-     * @param threadPoolSize            The number of threads to allocate in the thread pool.  Should be 1 for this use case.
-     * @param threadPoolLifespanSeconds The lifespan of the thread pool in seconds. After this time, the executor will shut down.
-     * @param workerLifespanSeconds    The lifespan of each individual Node.js firehose worker process in seconds.
-     * @param workerStartupDelay       The initial delay before the first firehose worker starts, in seconds.
-     * @param workerIntervalSeconds    The time interval between the start of consecutive firehose worker processes, in seconds.
      * @return The {@link ScheduledExecutorService} managing the firehose process.
      */
-    public ScheduledExecutorService connect(int threadPoolSize,
-                                            int threadPoolLifespanSeconds,
-                                            int workerLifespanSeconds,
-                                            int workerStartupDelay,
-                                            int workerIntervalSeconds) {
+    public ScheduledExecutorService connect() {
 
         System.out.println("Firehose Executor - Firehose initializing...");
 
-        firehoseExecutor = Executors.newScheduledThreadPool(threadPoolSize);
+        firehoseExecutor = Executors.newScheduledThreadPool(FIREHOSE_WORKER_THREAD_POOL_SIZE);
 
         Runnable firehoseTask = () -> {
             Process worker;
             try {
-                worker = new ProcessBuilder(SCRIPT_COMMAND, SCRIPT_LOCATION)
+                worker = new ProcessBuilder(FIREHOSE_WORKER_SCRIPT_RUN_COMMAND, FIREHOSE_WORKER_SCRIPT_LOCATION)
                         .inheritIO() // redirect all console.*() to System.out.*()
                         .start();
 
                 // blocking waitFor to act as a worker lifespan
-                if (!worker.waitFor(workerLifespanSeconds, TimeUnit.SECONDS)) {
+                if (!worker.waitFor(FIREHOSE_WORKER_LIFESPAN_SECONDS, TimeUnit.SECONDS)) {
                     destroyWorker(worker);
                 }
             } catch (Exception e) {
@@ -54,16 +51,19 @@ public class BlueskyFirehose {
             }
         };
 
-        firehoseExecutor.scheduleAtFixedRate(firehoseTask, workerStartupDelay, workerIntervalSeconds, TimeUnit.SECONDS);
+        firehoseExecutor.scheduleAtFixedRate(firehoseTask, FIREHOSE_WORKER_STARTUP_DELAY, FIREHOSE_WORKER_INTERVAL_SECONDS, TimeUnit.SECONDS);
 
         firehoseExecutor.schedule(() -> {
             disconnect(firehoseExecutor);
-        }, threadPoolLifespanSeconds, TimeUnit.SECONDS);
+        }, FIREHOSE_THREAD_POOL_LIFESPAN_SECONDS, TimeUnit.SECONDS);
 
         System.out.println("Firehose Executor - Firehose started");
 
         return firehoseExecutor;
     }
+
+
+
 
     /**
      * Stops the Bluesky firehose process by shutting down the {@link ScheduledExecutorService}.
@@ -77,6 +77,9 @@ public class BlueskyFirehose {
             System.out.println("Firehose Executor - Firehose stopped");
         }
     }
+
+
+
 
     /**
      * Destroys a firehose worker process.

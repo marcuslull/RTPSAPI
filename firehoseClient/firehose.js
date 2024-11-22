@@ -49,7 +49,7 @@ async function main() {
 
             // add message to Redis stream named "bskyFirehose" and auto generate ids
             await redisConnection.xAdd(redisStream, redisIdStrategy, { combined })
-            console.log("Firehose Connection Script - Message added successfully! " + combined.toString())
+            // console.log("Firehose Connection Script - Message added successfully! " + combined.toString())
         } catch (err) {
             console.error("Firehose Connection Script - Error adding message to stream: ", err);
         }
