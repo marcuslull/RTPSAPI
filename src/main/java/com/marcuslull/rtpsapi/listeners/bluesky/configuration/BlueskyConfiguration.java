@@ -1,4 +1,4 @@
-package com.marcuslull.rtpsapi.listeners.bluesky;
+package com.marcuslull.rtpsapi.listeners.bluesky.configuration;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

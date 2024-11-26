@@ -1,4 +1,4 @@
-package com.marcuslull.rtpsapi.listeners.bluesky.model;
+package com.marcuslull.rtpsapi.analysts.model;
 
 public record BlueskyRecord(
         Object text,
